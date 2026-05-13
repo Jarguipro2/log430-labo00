@@ -188,9 +188,9 @@ lxc profile set default limits.memory=4GB
 ```
 
 #### 5.1. Créez une VM
-Pour créer une VM sur le serveur `fiware-1.logti.etsmtl.ca`, exécutez `lxc launch`. Dans l'exemple ci-dessus, remplacez `<nom-vm>` par le nom que vous voulez donner à votre VM :
+Pour créer une VM sur le serveur `fiware-1.logti.etsmtl.ca`, exécutez `lxc launch`. Dans l'exemple ci-dessus, remplacez `vm-guillaume-log430` par le nom que vous voulez donner à votre VM :
 ```sh
-lxc launch ubuntu:22.04 fiware-1:<nom-vm> --vm
+lxc launch ubuntu:22.04 fiware-1:vm-guillaume-log430 --vm
 ```
 
 > 📝 **NOTE** : Pour les noms de VMs, préférez les noms en kebab-case. Par exemple: `vm-gabriel-log430`.
@@ -208,7 +208,7 @@ Voici un exemple de sortie attendue :
 +--------------------+---------+------+-----------------------------------------------+-----------------+-----------+
 |       NAME         |  STATE  | IPV4 |                     IPV6                      |      TYPE       | SNAPSHOTS |
 +--------------------+---------+------+-----------------------------------------------+-----------------+-----------+
-| <nom-vm>           | RUNNING |      | fd42:e706:c40b:f0b7:216:3eff:fe35:9940 (eth0) | VIRTUAL-MACHINE | 0         |
+| vm-guillaume-log430           | RUNNING |      | fd42:e706:c40b:f0b7:216:3eff:fe35:9940 (eth0) | VIRTUAL-MACHINE | 0         |
 +--------------------+---------+------+-----------------------------------------------+-----------------+-----------+
 ```
 
@@ -221,31 +221,31 @@ Par défaut, la VM est dans un autre réseau, isolé du réseau où `fiware-1.lo
 ```bash
 #  Ajouter l'interface br0 au profil 
 lxc profile device add default eth0 nic nictype=bridged parent=lxdbr0
-lxc config device override fiware-1:<nom-vm> eth0
-lxc config device set fiware-1:<nom-vm> eth0 parent=br0
+lxc config device override fiware-1:vm-guillaume-log430 eth0
+lxc config device set fiware-1:vm-guillaume-log430 eth0 parent=br0
 
 # Redémarrer la VM
-lxc restart fiware-1:<nom-vm>
+lxc restart fiware-1:vm-guillaume-log430
 ```
 
 Veuillez attendre 30-40 secondes que la VM redémarre.
 
 #### 5.3. Configurez une adresse IP statique
-Pour définir une IP statique pour votre VM, exécutez la commande ci-dessus. Remplacez `<VOTRE_IP>` par une adresse IP de la plage `10.194.32.155` à `10.194.32.253`. Cela veut dire que nous avons 99 IPs disponibles.
+Pour définir une IP statique pour votre VM, exécutez la commande ci-dessus. Remplacez `10.194.32.190` par une adresse IP de la plage `10.194.32.155` à `10.194.32.253`. Cela veut dire que nous avons 99 IPs disponibles.
 
 > 🚫 **ATTENTION** : Il est **strictement interdit** d'utiliser des adresses autres que celles réservées (de `10.194.32.155` à `10.194.32.253`). Si quelqu'un abuse et décide d'attribuer une adresse qui est en dehors de la plage comme `10.194.32.34`, l'accès aux serveurs sera révoqué pour la personne fautive et ses machines seront arrêtées.
 > ⚠️ **IMPORTANT** : Pour éviter des conflits d'adresse IP avec vos camarades, choisissez une adresse et enregistrez votre nom dans [ce document](https://docs.google.com/spreadsheets/d/1R9xkjllqm20-4k7mT3_JpbhTqQcAbhKceuWu98zOlG8/edit?usp=sharing) afin de les informer.
 
 ```bash
 # Créer le fichier de configuration netplan
-lxc exec fiware-1:<nom-vm> -- bash -c "cat > /etc/netplan/50-cloud-init.yaml <<'EOF'
+lxc exec fiware-1:vm-guillaume-log430 -- bash -c "cat > /etc/netplan/50-cloud-init.yaml <<'EOF'
 network:
   version: 2
   ethernets:
     enp5s0:
       dhcp4: no
       addresses:
-        - <VOTRE_IP>/24
+        - 10.194.32.190/24
       routes:
         - to: default
           via: 10.194.32.1
@@ -256,27 +256,27 @@ network:
 EOF"
 
 # Appliquer la configuration
-lxc exec fiware-1:<nom-vm> -- netplan apply
+lxc exec fiware-1:vm-guillaume-log430 -- netplan apply
 ```
 
 > 📝 **NOTE** : Le warning "Cannot call Open vSwitch: ovsdb-server.service is not running" est normal et sans conséquence.
 
 Pour vérifier l'IP :
 ```bash
-lxc exec fiware-1:<nom-vm> -- ip addr show enp5s0
+lxc exec fiware-1:vm-guillaume-log430 -- ip addr show enp5s0
 ```
 
 Résultat attendu :
 ```bash
 2: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
     link/ether 00:16:3e:16:17:40 brd ff:ff:ff:ff:ff:ff
-    inet <VOTRE_IP>/24 brd 10.194.32.255 scope global enp5s0
+    inet 10.194.32.190/24 brd 10.194.32.255 scope global enp5s0
        valid_lft forever preferred_lft forever
 ```
 
-Pour vérifier la connectivité depuis votre ordinateur, exécutez `ping`. Remplacez `<VOTRE_IP>` pour l'IP de la VM (ATTENTION: ceci n'est pas l'IP à votre ordinateur) :
+Pour vérifier la connectivité depuis votre ordinateur, exécutez `ping`. Remplacez `10.194.32.190` pour l'IP de la VM (ATTENTION: ceci n'est pas l'IP à votre ordinateur) :
 ```bash
-ping -c 3 <VOTRE_IP>
+ping -c 3 10.194.32.190
 ```
 
 #### 5.4. Configurez l'accès via SSH
@@ -284,23 +284,23 @@ Même si on peut se connecter aux VMs via `lxc`, ce n'est pas idéal parce que n
 
 ```bash
 # Installer openssh-server dans la VM
-lxc exec fiware-1:<nom-vm> -- bash -c "apt update && apt install -y openssh-server"
+lxc exec fiware-1:vm-guillaume-log430 -- bash -c "apt update && apt install -y openssh-server"
 
 # Créer un keypair (clé privée + clé publique)
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/lxd_key
 
 # Créer le dossier .ssh dans la VM
-lxc exec fiware-1:<nom-vm> -- mkdir -p /root/.ssh
+lxc exec fiware-1:vm-guillaume-log430 -- mkdir -p /root/.ssh
 
 # Copier la clé publique à la VM
-lxc file push ~/.ssh/lxd_key.pub fiware-1:<nom-vm>/root/.ssh/authorized_keys
+lxc file push ~/.ssh/lxd_key.pub fiware-1:vm-guillaume-log430/root/.ssh/authorized_keys
 
 # Définir les permissions
-lxc exec fiware-1:<nom-vm> -- bash -c "chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys"
+lxc exec fiware-1:vm-guillaume-log430 -- bash -c "chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys"
 
 # Tester la connexion
-ssh -i ~/.ssh/lxd_key -o StrictHostKeyChecking=accept-new root@<VOTRE_IP> hostname
-ssh -i ~/.ssh/lxd_key root@<VOTRE_IP>
+ssh -i ~/.ssh/lxd_key -o StrictHostKeyChecking=accept-new root@10.194.32.190 hostname
+ssh -i ~/.ssh/lxd_key root@10.194.32.190
 ```
 
 ### 6. Déployez votre application manuellement

@@ -31,3 +31,14 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/src
         run: | 
           python -m pytest
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull latest & redeploy
+        run: |
+          docker compose down
+          docker compose build
+          docker compose up -d
